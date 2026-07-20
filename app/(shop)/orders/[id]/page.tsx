@@ -1,6 +1,6 @@
 import { notFound, redirect } from "next/navigation";
-
 import Link from "next/link";
+import Image from "next/image";
 
 import {
   CreditCard,
@@ -180,7 +180,7 @@ export default async function OrderDetailsPage({
 
         <div className="space-y-8 lg:col-span-2">
 
-                  {/* Shipping Address */}
+          {/* Shipping Address */}
 
           <section className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
 
@@ -526,7 +526,7 @@ export default async function OrderDetailsPage({
 
           </section>
 
-                    {/* Order Items */}
+          {/* Order Items */}
 
           <section className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
 
@@ -554,14 +554,15 @@ export default async function OrderDetailsPage({
                     className="flex items-center gap-5 rounded-xl border border-gray-200 p-5"
                   >
 
-                    <div className="h-24 w-24 overflow-hidden rounded-xl border bg-gray-50">
+                    <div className="relative h-24 w-24 overflow-hidden rounded-xl border bg-gray-50">
 
                       {image ? (
 
-                        <img
+                        <Image
                           src={image}
                           alt={item.productName}
-                          className="h-full w-full object-cover"
+                          fill
+                          className="object-cover"
                         />
 
                       ) : (
@@ -726,7 +727,7 @@ export default async function OrderDetailsPage({
 
           </section>
 
-                    {/* Customer Notes */}
+          {/* Customer Notes */}
 
           {order.notes && (
             <section className="rounded-2xl border border-gray-200 bg-white p-8 shadow-sm">
@@ -779,11 +780,14 @@ export default async function OrderDetailsPage({
 
                   ) : (
 
-                    <img
-                      src={order.payment.receiptUrl}
-                      alt="Payment Receipt"
-                      className="w-full rounded-xl object-cover"
-                    />
+                    <div className="relative h-48 w-full">
+                      <Image
+                        src={order.payment.receiptUrl}
+                        alt="Payment Receipt"
+                        fill
+                        className="rounded-xl object-cover"
+                      />
+                    </div>
 
                   )}
 
@@ -805,7 +809,7 @@ export default async function OrderDetailsPage({
               <div className="mt-6">
 
                 <p className="mb-5 text-gray-600">
-                  You haven't uploaded your
+                  You haven&apos;t uploaded your
                   payment receipt yet.
                 </p>
 
