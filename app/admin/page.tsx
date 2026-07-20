@@ -16,6 +16,9 @@ import {
 
 import { prisma } from "@/lib/prisma";
 
+// Force dynamic rendering to prevent build-time database prerender queries
+export const dynamic = "force-dynamic";
+
 // Helper for currency formatting
 const formatCurrency = (amount: number) => {
   return `NZ$ ${amount.toLocaleString(undefined, {
