@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
+  Control,
   UseFormSetValue,
-  UseFormWatch,
+  useWatch,
 } from "react-hook-form";
 
 import { ProductInput } from "@/schemas/product-schema";
@@ -20,37 +21,46 @@ export interface ProductImage {
 }
 
 interface ProductImagesProps {
-  watch: UseFormWatch<ProductInput>;
+  control: Control<ProductInput>;
   setValue: UseFormSetValue<ProductInput>;
   initialImages?: ProductInput["images"];
 }
 
-
 export default function ProductImages({
-  watch,
+  control,
   setValue,
 }: ProductImagesProps) {
   const [images, setImages] = useState<ProductImage[]>([]);
+  const hasInitialized = useRef(false);
 
-  // Load existing images when editing
+  // Watch form images safely using useWatch hook
+  const formImages = useWatch({
+    control,
+    name: "images",
+  });
+
+  // Safe initial hydration when editing existing products
   useEffect(() => {
-  const formImages = watch("images");
+    if (hasInitialized.current) return;
 
-  if (!formImages) return;
+    if (formImages && formImages.length > 0) {
+      setImages(
+        formImages.map((image, index) => ({
+          id: crypto.randomUUID(),
+          url: image.imageUrl,
+          publicId: image.publicId,
+          isCover: image.isCover ?? false,
+          sortOrder: image.sortOrder ?? index,
+        }))
+      );
+      hasInitialized.current = true;
+    }
+  }, [formImages]);
 
-  setImages(
-    formImages.map((image, index) => ({
-      id: crypto.randomUUID(),
-      url: image.imageUrl,
-      publicId: image.publicId,
-      isCover: image.isCover ?? false,
-      sortOrder: image.sortOrder ?? index,
-    }))
-  );
-}, [watch]);
-
-  // Keep React Hook Form in sync
+  // Keep React Hook Form in sync when images state changes locally
   useEffect(() => {
+    if (!hasInitialized.current && images.length === 0) return;
+
     setValue(
       "images",
       images.map((image) => ({
@@ -59,7 +69,8 @@ export default function ProductImages({
         altText: "",
         isCover: image.isCover,
         sortOrder: image.sortOrder,
-      }))
+      })),
+      { shouldValidate: true }
     );
   }, [images, setValue]);
 
@@ -75,10 +86,7 @@ export default function ProductImages({
         </p>
       </div>
 
-      <UploadDropzone
-        images={images}
-        setImages={setImages}
-      />
+      <UploadDropzone images={images} setImages={setImages} />
 
       {images.length > 0 && (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

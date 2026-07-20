@@ -7,73 +7,78 @@ import { useDropzone } from "react-dropzone";
 import { ProductImage } from "./ProductImages";
 
 interface Props {
-  images: ProductImage[];
-
+  images?: ProductImage[];
   setImages: React.Dispatch<
     React.SetStateAction<ProductImage[]>
   >;
 }
 
+interface UploadResponse {
+  imageUrl: string;
+  publicId: string;
+  error?: string;
+}
+
 export default function UploadDropzone({
-  images,
   setImages,
 }: Props) {
-  const onDrop = async (
-    acceptedFiles: File[]
-  ) => {
-    try {
-      for (const file of acceptedFiles) {
-        const formData = new FormData();
+  const onDrop = async (acceptedFiles: File[]) => {
+    if (acceptedFiles.length === 0) return;
 
+    try {
+      const uploadPromises = acceptedFiles.map(async (file) => {
+        const formData = new FormData();
         formData.append("file", file);
 
-        const { data } = await axios.post(
+        const { data } = await axios.post<UploadResponse>(
           "/api/upload/product",
           formData,
           {
             headers: {
-              "Content-Type":
-                "multipart/form-data",
+              "Content-Type": "multipart/form-data",
             },
           }
         );
 
-        setImages((prev) => [
-          ...prev,
-          {
-            id: crypto.randomUUID(),
+        return {
+          url: data.imageUrl,
+          publicId: data.publicId,
+        };
+      });
 
-            url: data.imageUrl,
+      const uploadedFiles = await Promise.all(uploadPromises);
 
-            publicId: data.publicId,
+      setImages((prev) => {
+        const hasCover = prev.some((img) => img.isCover);
 
-            isCover: prev.length === 0,
+        const newImages: ProductImage[] = uploadedFiles.map((file, index) => ({
+          id: crypto.randomUUID(),
+          url: file.url,
+          publicId: file.publicId,
+          isCover: !hasCover && index === 0,
+          sortOrder: prev.length + index,
+        }));
 
-            sortOrder: prev.length,
-          },
-        ]);
-      }
-    } catch (error: any) {
+        return [...prev, ...newImages];
+      });
+    } catch (error: unknown) {
       console.error("Upload Error:", error);
 
-      const message =
-        error?.response?.data?.error ||
-        error?.message ||
-        "Image upload failed.";
+      let message = "Image upload failed.";
+
+      if (axios.isAxiosError(error)) {
+        message = error.response?.data?.error || error.message || message;
+      } else if (error instanceof Error) {
+        message = error.message;
+      }
 
       alert(message);
     }
   };
 
-  const {
-    getRootProps,
-    getInputProps,
-    isDragActive,
-  } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-
     multiple: true,
-
     accept: {
       "image/jpeg": [],
       "image/png": [],
@@ -85,30 +90,15 @@ export default function UploadDropzone({
   return (
     <div
       {...getRootProps()}
-      className={`
-        flex
-        cursor-pointer
-        flex-col
-        items-center
-        justify-center
-        rounded-2xl
-        border-2
-        border-dashed
-        p-12
-        transition
-        ${
-          isDragActive
-            ? "border-[#DC2626] bg-red-50"
-            : "border-gray-300 hover:border-[#DC2626]"
-        }
-      `}
+      className={`flex cursor-pointer flex-col items-center justify-center rounded-2xl border-2 border-dashed p-12 transition ${
+        isDragActive
+          ? "border-[#DC2626] bg-red-50"
+          : "border-gray-300 hover:border-[#DC2626]"
+      }`}
     >
       <input {...getInputProps()} />
 
-      <UploadCloud
-        size={60}
-        className="text-[#DC2626]"
-      />
+      <UploadCloud size={60} className="text-[#DC2626]" />
 
       <h3 className="mt-5 text-xl font-semibold text-[#0F172A]">
         Drag & Drop Images
