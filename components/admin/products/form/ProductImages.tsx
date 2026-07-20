@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Control, UseFormSetValue, useWatch } from "react-hook-form";
 
 import { ProductInput } from "@/schemas/product-schema";
@@ -16,7 +16,7 @@ export interface ProductImage {
   sortOrder: number;
 }
 
-interface ProductImagesProps {
+export interface ProductImagesProps {
   control: Control<ProductInput>;
   setValue: UseFormSetValue<ProductInput>;
   initialImages?: ProductInput["images"];
@@ -33,6 +33,7 @@ export default function ProductImages({
     name: "images",
   });
 
+  // Hydrate local state directly on initial render without extra effect loops
   const [images, setImages] = useState<ProductImage[]>(() => {
     const sourceImages = initialImages ?? formImages;
     if (sourceImages && sourceImages.length > 0) {
@@ -46,28 +47,6 @@ export default function ProductImages({
     }
     return [];
   });
-
-  const hasInitialized = useRef(false);
-
-  // Safe hydration without triggering synchronous setState warning
-  useEffect(() => {
-    if (hasInitialized.current) return;
-
-    if (formImages && formImages.length > 0 && images.length === 0) {
-      hasInitialized.current = true;
-      queueMicrotask(() => {
-        setImages(
-          formImages.map((image, index) => ({
-            id: crypto.randomUUID(),
-            url: image.imageUrl,
-            publicId: image.publicId,
-            isCover: image.isCover ?? false,
-            sortOrder: image.sortOrder ?? index,
-          }))
-        );
-      });
-    }
-  }, [formImages, images.length]);
 
   // Keep React Hook Form in sync when images state changes locally
   useEffect(() => {
