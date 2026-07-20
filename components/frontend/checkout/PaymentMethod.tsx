@@ -1,9 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-
+import { useCallback, useEffect, useState } from "react";
 import Image from "next/image";
-
 import {
   Building2,
   CheckCircle2,
@@ -31,93 +29,61 @@ interface BankAccount {
 }
 
 export default function PaymentMethod() {
-  const {
-    checkout,
-    setSelectedBank,
-  } = useCheckout();
+  const { checkout, setSelectedBank } = useCheckout();
 
-  const [banks, setBanks] =
-    useState<BankAccount[]>([]);
+  const [banks, setBanks] = useState<BankAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
 
-  const [loading, setLoading] =
-    useState(true);
+  const selectedBank = checkout.selectedBankId;
 
-  const [copied, setCopied] =
-    useState(false);
-
-  const selectedBank =
-    checkout.selectedBankId;
-
-  useEffect(() => {
-    loadBanks();
-  }, []);
-
-  async function loadBanks() {
+  const loadBanks = useCallback(async () => {
     try {
-      const response = await fetch(
-        "/api/payment-methods",
-        {
-          cache: "no-store",
-        }
-      );
+      const response = await fetch("/api/payment-methods", {
+        cache: "no-store",
+      });
 
-      const data =
-        await response.json();
+      const data = await response.json();
 
-      if (
-        response.ok &&
-        data.success
-      ) {
+      if (response.ok && data.success) {
         setBanks(data.paymentMethods);
 
-        const defaultBank =
-          data.paymentMethods.find(
-            (
-              bank: BankAccount
-            ) => bank.isDefault
-          );
+        const defaultBank = data.paymentMethods.find(
+          (bank: BankAccount) => bank.isDefault
+        );
 
         const bankId =
-          defaultBank?.id ??
-          data.paymentMethods[0]?.id ??
-          "";
+          defaultBank?.id ?? data.paymentMethods[0]?.id ?? "";
 
-        if (
-          bankId &&
-          !checkout.selectedBankId
-        ) {
+        if (bankId && !checkout.selectedBankId) {
           setSelectedBank(bankId);
         }
       }
     } catch (error) {
-      console.error(
-        "Failed to load payment methods:",
-        error
-      );
+      console.error("Failed to load payment methods:", error);
     } finally {
       setLoading(false);
     }
-  }
+  }, [checkout.selectedBankId, setSelectedBank]);
 
-  const bank = banks.find(
-    (b) => b.id === selectedBank
-  );
+  useEffect(() => {
+    loadBanks();
+  }, [loadBanks]);
+
+  const bank = banks.find((b) => b.id === selectedBank);
 
   async function copyAccountNumber() {
     if (!bank) return;
 
     try {
-      await navigator.clipboard.writeText(
-        bank.accountNumber
-      );
-
+      await navigator.clipboard.writeText(bank.accountNumber);
       setCopied(true);
 
       setTimeout(() => {
         setCopied(false);
       }, 2000);
     } catch (error) {
-      console.error(error);
+      console.error("Failed to copy account number:", error);
     }
   }
 
@@ -135,207 +101,125 @@ export default function PaymentMethod() {
   if (banks.length === 0) {
     return (
       <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-6 text-center">
-
         <Building2
           size={40}
           className="mx-auto text-yellow-600"
         />
 
-        <h3 className="mt-4 text-lg font-bold">
-          No Payment Method
-        </h3>
+        <h3 className="mt-4 text-lg font-bold">No Payment Method</h3>
 
         <p className="mt-2 text-gray-600">
-          No active bank account has been
-          configured by the administrator.
+          No active bank account has been configured by the administrator.
         </p>
-
       </div>
     );
   }
 
   return (
-        <div className="space-y-6">
-
+    <div className="space-y-6">
       {/* Header */}
-
       <div className="rounded-2xl bg-blue-50 p-5">
-
         <div className="flex items-center gap-3">
-
           <CreditCard className="text-blue-600" />
 
           <div>
-
-            <h3 className="font-bold text-[#0F172A]">
-              Bank Transfer
-            </h3>
+            <h3 className="font-bold text-[#0F172A]">Bank Transfer</h3>
 
             <p className="text-sm text-gray-600">
-              Complete your payment using one
-              of the bank accounts below.
+              Complete your payment using one of the bank accounts below.
             </p>
-
           </div>
-
         </div>
-
       </div>
 
       {/* Bank Accounts */}
-
       <div className="space-y-4">
-
-        {banks.map((bank) => (
+        {banks.map((b) => (
           <label
-            key={bank.id}
-            className={`
-              block
-              cursor-pointer
-              rounded-2xl
-              border-2
-              p-5
-              transition-all
-              ${
-                selectedBank === bank.id
-                  ? "border-[#DC2626] bg-red-50"
-                  : "border-gray-200 hover:border-red-200"
-              }
-            `}
+            key={b.id}
+            className={`block cursor-pointer rounded-2xl border-2 p-5 transition-all ${
+              selectedBank === b.id
+                ? "border-[#DC2626] bg-red-50"
+                : "border-gray-200 hover:border-red-200"
+            }`}
           >
-
             <div className="flex items-start gap-4">
-
               <input
                 type="radio"
-                checked={
-                  selectedBank === bank.id
-                }
-                onChange={() =>
-                  setSelectedBank(bank.id)
-                }
+                name="selectedBank"
+                value={b.id}
+                checked={selectedBank === b.id}
+                onChange={() => setSelectedBank(b.id)}
                 className="mt-1 accent-[#DC2626]"
               />
 
               <div className="flex-1">
-
                 <div className="flex items-center justify-between">
-
                   <div>
-
                     <h3 className="text-lg font-bold text-[#0F172A]">
-                      {bank.bankName}
+                      {b.bankName}
                     </h3>
 
-                    {bank.isDefault && (
+                    {b.isDefault && (
                       <span className="mt-1 inline-flex rounded-full bg-green-100 px-3 py-1 text-xs font-semibold text-green-700">
                         Default Bank
                       </span>
                     )}
-
                   </div>
 
-                  {selectedBank === bank.id && (
+                  {selectedBank === b.id && (
                     <CheckCircle2 className="text-green-600" />
                   )}
-
                 </div>
 
                 <div className="mt-5 grid gap-4 md:grid-cols-2">
+                  <Info title="Account Name" value={b.accountName} />
+                  <Info title="Account Number" value={b.accountNumber} />
+                  <Info title="Currency" value={b.currency} />
+                  <Info title="Country" value={b.country ?? "-"} />
 
-                  <Info
-                    title="Account Name"
-                    value={bank.accountName}
-                  />
-
-                  <Info
-                    title="Account Number"
-                    value={bank.accountNumber}
-                  />
-
-                  <Info
-                    title="Currency"
-                    value={bank.currency}
-                  />
-
-                  <Info
-                    title="Country"
-                    value={
-                      bank.country ?? "-"
-                    }
-                  />
-
-                  {bank.branchName && (
-                    <Info
-                      title="Branch"
-                      value={bank.branchName}
-                    />
+                  {b.branchName && (
+                    <Info title="Branch" value={b.branchName} />
                   )}
 
-                  {bank.swiftCode && (
-                    <Info
-                      title="SWIFT Code"
-                      value={bank.swiftCode}
-                    />
+                  {b.swiftCode && (
+                    <Info title="SWIFT Code" value={b.swiftCode} />
                   )}
 
-                  {bank.iban && (
-                    <Info
-                      title="IBAN"
-                      value={bank.iban}
-                    />
-                  )}
-
+                  {b.iban && <Info title="IBAN" value={b.iban} />}
                 </div>
 
-                {bank.instructions && (
+                {b.instructions && (
                   <div className="mt-5 rounded-xl bg-gray-50 p-4">
-
-                    <h4 className="font-semibold">
-                      Payment Instructions
-                    </h4>
+                    <h4 className="font-semibold">Payment Instructions</h4>
 
                     <p className="mt-2 text-sm text-gray-600">
-                      {bank.instructions}
+                      {b.instructions}
                     </p>
-
                   </div>
                 )}
 
-                {bank.qrCodeUrl && (
+                {b.qrCodeUrl && (
                   <div className="mt-5">
-
                     <div className="mb-3 flex items-center gap-2">
-
                       <QrCode size={18} />
-
-                      <span className="font-medium">
-                        QR Code
-                      </span>
-
+                      <span className="font-medium">QR Code</span>
                     </div>
 
                     <div className="relative h-44 w-44 overflow-hidden rounded-xl border">
-
                       <Image
-                        src={bank.qrCodeUrl}
+                        src={b.qrCodeUrl}
                         alt="QR Code"
                         fill
                         className="object-contain"
                       />
-
                     </div>
-
                   </div>
                 )}
-
               </div>
-
             </div>
-
           </label>
         ))}
-
       </div>
 
       {bank && (
@@ -344,39 +228,24 @@ export default function PaymentMethod() {
           onClick={copyAccountNumber}
           className="flex items-center gap-2 rounded-xl bg-[#DC2626] px-5 py-3 font-semibold text-white transition hover:bg-red-700"
         >
-
           <Copy size={18} />
-
-          {copied
-            ? "Copied!"
-            : "Copy Account Number"}
-
+          {copied ? "Copied!" : "Copy Account Number"}
         </button>
       )}
-
     </div>
   );
 }
+
 interface InfoProps {
   title: string;
   value: string;
 }
 
-function Info({
-  title,
-  value,
-}: InfoProps) {
+function Info({ title, value }: InfoProps) {
   return (
     <div>
-
-      <p className="text-sm text-gray-500">
-        {title}
-      </p>
-
-      <p className="mt-1 font-semibold text-[#0F172A] break-all">
-        {value}
-      </p>
-
+      <p className="text-sm text-gray-500">{title}</p>
+      <p className="mt-1 break-all font-semibold text-[#0F172A]">{value}</p>
     </div>
   );
 }
