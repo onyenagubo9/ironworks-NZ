@@ -49,7 +49,7 @@ export async function register(values: unknown) {
       email,
       password: hashedPassword,
       role,
-      isVerified: false,
+      emailVerified: null, // null represents an unverified email in your schema
     },
   });
 
