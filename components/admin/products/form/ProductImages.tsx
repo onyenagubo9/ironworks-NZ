@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Control, UseFormSetValue, useWatch } from "react-hook-form";
+import { Control, UseFormSetValue, UseFormWatch, useWatch } from "react-hook-form";
 
 import { ProductInput } from "@/schemas/product-schema";
 
@@ -17,23 +17,24 @@ export interface ProductImage {
 }
 
 export interface ProductImagesProps {
-  control: Control<ProductInput>;
+  control?: Control<ProductInput>;
+  watch?: UseFormWatch<ProductInput>;
   setValue: UseFormSetValue<ProductInput>;
   initialImages?: ProductInput["images"];
 }
 
 export default function ProductImages({
   control,
+  watch,
   setValue,
   initialImages,
 }: ProductImagesProps) {
-  // Watch form images safely using useWatch hook
-  const formImages = useWatch({
-    control,
-    name: "images",
-  });
+  // Watch form images safely whether parent passes `watch` or `control`
+  const formImagesFromWatch = watch ? watch("images") : undefined;
+  const formImagesFromControl = useWatch({ control, name: "images" });
+  const formImages = formImagesFromWatch ?? formImagesFromControl;
 
-  // Hydrate local state directly on initial render without extra effect loops
+  // Hydrate local state directly on initial render
   const [images, setImages] = useState<ProductImage[]>(() => {
     const sourceImages = initialImages ?? formImages;
     if (sourceImages && sourceImages.length > 0) {
