@@ -1,11 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import {
-  Control,
-  UseFormSetValue,
-  useWatch,
-} from "react-hook-form";
+import { Control, UseFormSetValue, useWatch } from "react-hook-form";
 
 import { ProductInput } from "@/schemas/product-schema";
 
@@ -29,38 +25,52 @@ interface ProductImagesProps {
 export default function ProductImages({
   control,
   setValue,
+  initialImages,
 }: ProductImagesProps) {
-  const [images, setImages] = useState<ProductImage[]>([]);
-  const hasInitialized = useRef(false);
-
   // Watch form images safely using useWatch hook
   const formImages = useWatch({
     control,
     name: "images",
   });
 
-  // Safe initial hydration when editing existing products
+  const [images, setImages] = useState<ProductImage[]>(() => {
+    const sourceImages = initialImages ?? formImages;
+    if (sourceImages && sourceImages.length > 0) {
+      return sourceImages.map((image, index) => ({
+        id: crypto.randomUUID(),
+        url: image.imageUrl,
+        publicId: image.publicId,
+        isCover: image.isCover ?? false,
+        sortOrder: image.sortOrder ?? index,
+      }));
+    }
+    return [];
+  });
+
+  const hasInitialized = useRef(false);
+
+  // Safe hydration without triggering synchronous setState warning
   useEffect(() => {
     if (hasInitialized.current) return;
 
-    if (formImages && formImages.length > 0) {
-      setImages(
-        formImages.map((image, index) => ({
-          id: crypto.randomUUID(),
-          url: image.imageUrl,
-          publicId: image.publicId,
-          isCover: image.isCover ?? false,
-          sortOrder: image.sortOrder ?? index,
-        }))
-      );
+    if (formImages && formImages.length > 0 && images.length === 0) {
       hasInitialized.current = true;
+      queueMicrotask(() => {
+        setImages(
+          formImages.map((image, index) => ({
+            id: crypto.randomUUID(),
+            url: image.imageUrl,
+            publicId: image.publicId,
+            isCover: image.isCover ?? false,
+            sortOrder: image.sortOrder ?? index,
+          }))
+        );
+      });
     }
-  }, [formImages]);
+  }, [formImages, images.length]);
 
   // Keep React Hook Form in sync when images state changes locally
   useEffect(() => {
-    if (!hasInitialized.current && images.length === 0) return;
-
     setValue(
       "images",
       images.map((image) => ({

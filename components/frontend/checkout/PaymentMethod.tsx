@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import {
   Building2,
@@ -36,39 +36,55 @@ export default function PaymentMethod() {
   const [copied, setCopied] = useState(false);
 
   const selectedBank = checkout.selectedBankId;
+  const setSelectedBankRef = useRef(setSelectedBank);
+  const selectedBankIdRef = useRef(checkout.selectedBankId);
 
-  const loadBanks = useCallback(async () => {
-    try {
-      const response = await fetch("/api/payment-methods", {
-        cache: "no-store",
-      });
-
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setBanks(data.paymentMethods);
-
-        const defaultBank = data.paymentMethods.find(
-          (bank: BankAccount) => bank.isDefault
-        );
-
-        const bankId =
-          defaultBank?.id ?? data.paymentMethods[0]?.id ?? "";
-
-        if (bankId && !checkout.selectedBankId) {
-          setSelectedBank(bankId);
-        }
-      }
-    } catch (error) {
-      console.error("Failed to load payment methods:", error);
-    } finally {
-      setLoading(false);
-    }
-  }, [checkout.selectedBankId, setSelectedBank]);
+  // Keep ref updated to avoid stale closures in async calls
+  useEffect(() => {
+    setSelectedBankRef.current = setSelectedBank;
+    selectedBankIdRef.current = checkout.selectedBankId;
+  }, [setSelectedBank, checkout.selectedBankId]);
 
   useEffect(() => {
+    let isMounted = true;
+
+    async function loadBanks() {
+      try {
+        const response = await fetch("/api/payment-methods", {
+          cache: "no-store",
+        });
+
+        const data = await response.json();
+
+        if (response.ok && data.success && isMounted) {
+          setBanks(data.paymentMethods);
+
+          const defaultBank = data.paymentMethods.find(
+            (bank: BankAccount) => bank.isDefault
+          );
+
+          const bankId =
+            defaultBank?.id ?? data.paymentMethods[0]?.id ?? "";
+
+          if (bankId && !selectedBankIdRef.current) {
+            setSelectedBankRef.current(bankId);
+          }
+        }
+      } catch (error) {
+        console.error("Failed to load payment methods:", error);
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
+
     loadBanks();
-  }, [loadBanks]);
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   const bank = banks.find((b) => b.id === selectedBank);
 

@@ -14,15 +14,18 @@ export async function GET() {
       message: "Email sent successfully.",
       info,
     });
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("EMAIL ERROR:", error);
+
+    // Cast error to safely access dynamic properties if present (e.g. nodemailer/zoho errors)
+    const err = error as { message?: string; code?: string | number; response?: unknown };
 
     return NextResponse.json(
       {
         success: false,
-        error: error.message,
-        code: error.code,
-        response: error.response,
+        error: err.message ?? "An unexpected error occurred",
+        code: err.code,
+        response: err.response,
       },
       { status: 500 }
     );

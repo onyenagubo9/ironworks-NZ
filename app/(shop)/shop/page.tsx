@@ -472,7 +472,7 @@ export default async function ShopPage({ searchParams }: ShopPageProps) {
                 No Products Found
               </h2>
               <p className="mx-auto mt-4 max-w-xl text-gray-600">
-                We couldn't find any products matching your search criteria. Try
+                We couldn&apos;t find any products matching your search criteria. Try
                 adjusting your filters or browse all available products.
               </p>
               <Link
