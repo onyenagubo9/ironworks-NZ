@@ -307,9 +307,9 @@ enum PaymentMethod {
 }
 
 enum DeliveryMethod {
-  STANDARD
-  EXPRESS
-  PICKUP
+  STANDARD @map("standard")
+  EXPRESS  @map("express")
+  PICKUP   @map("pickup")
 }
 
 model Order {
