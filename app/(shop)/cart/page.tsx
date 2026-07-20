@@ -4,6 +4,9 @@ import EmptyCart from "@/components/frontend/cart/EmptyCart";
 import CartItem from "@/components/frontend/cart/CartItem";
 import CartSummary from "@/components/frontend/cart/CartSummary";
 
+// Force dynamic rendering to prevent build-time static generation errors when accessing cookies/headers
+export const dynamic = "force-dynamic";
+
 export default async function CartPage() {
   const result = await getCart();
 
@@ -33,11 +36,9 @@ export default async function CartPage() {
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-12">
-
       {/* Header */}
 
       <div className="mb-10 flex flex-col gap-2">
-
         <h1 className="text-4xl font-bold text-[#0F172A]">
           Shopping Cart
         </h1>
@@ -46,41 +47,33 @@ export default async function CartPage() {
           {result.itemCount} item
           {result.itemCount !== 1 && "s"} in your cart
         </p>
-
       </div>
 
       {/* Content */}
 
       <div className="grid gap-10 lg:grid-cols-3">
-
         {/* Cart Items */}
 
         <div className="space-y-6 lg:col-span-2">
-
           {result.items.map((item) => (
             <CartItem
               key={item.id}
               item={item}
             />
           ))}
-
         </div>
 
         {/* Summary */}
 
         <div>
-
           <CartSummary
             subtotal={result.subtotal}
             shipping={0}
             tax={0}
             discount={0}
           />
-
         </div>
-
       </div>
-
     </div>
   );
 }
