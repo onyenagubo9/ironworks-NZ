@@ -1,5 +1,9 @@
 import { NextResponse } from "next/server";
-import { v2 as cloudinary } from "cloudinary";
+import {
+  v2 as cloudinary,
+  UploadApiResponse,
+  UploadApiErrorResponse,
+} from "cloudinary";
 
 cloudinary.config({
   cloud_name: process.env.CLOUDINARY_CLOUD_NAME!,
@@ -10,54 +14,47 @@ cloudinary.config({
 export async function POST(request: Request) {
   try {
     const formData = await request.formData();
-
-    const file = formData.get("file") as File;
+    const file = formData.get("file") as File | null;
 
     if (!file) {
       return NextResponse.json(
-        {
-          error: "No file uploaded.",
-        },
-        {
-          status: 400,
-        }
+        { error: "No file uploaded." },
+        { status: 400 }
       );
     }
 
     const bytes = await file.arrayBuffer();
-
     const buffer = Buffer.from(bytes);
 
-    const result = await new Promise<any>(
-      (resolve, reject) => {
-        cloudinary.uploader
-          .upload_stream(
-            {
-              folder: "products",
-            },
-            (error, result) => {
-              if (error) reject(error);
-              else resolve(result);
+    // ✅ Replaced Promise<any> with Promise<UploadApiResponse>
+    const result = await new Promise<UploadApiResponse>((resolve, reject) => {
+      cloudinary.uploader
+        .upload_stream(
+          { folder: "products" },
+          (
+            error: UploadApiErrorResponse | undefined,
+            result: UploadApiResponse | undefined
+          ) => {
+            if (error || !result) {
+              reject(error || new Error("Cloudinary upload failed"));
+            } else {
+              resolve(result);
             }
-          )
-          .end(buffer);
-      }
-    );
+          }
+        )
+        .end(buffer);
+    });
 
     return NextResponse.json({
       imageUrl: result.secure_url,
       publicId: result.public_id,
     });
-  } catch (error) {
+  } catch (error: unknown) {
     console.error(error);
 
     return NextResponse.json(
-      {
-        error: "Image upload failed.",
-      },
-      {
-        status: 500,
-      }
+      { error: "Image upload failed." },
+      { status: 500 }
     );
   }
 }

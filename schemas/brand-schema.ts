@@ -13,15 +13,9 @@ export const BrandSchema = z.object({
 
   website: z.string().optional(),
 
-  featured: z
-    .boolean()
-    .optional()
-    .transform((v) => v ?? false),
+  featured: z.boolean().default(false),
 
-  isActive: z
-    .boolean()
-    .optional()
-    .transform((v) => v ?? true),
+  isActive: z.boolean().default(true),
 
   seoTitle: z.string().optional(),
 
