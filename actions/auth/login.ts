@@ -5,6 +5,7 @@ import { AuthError } from "next-auth";
 
 import { prisma } from "@/lib/prisma";
 import { LoginSchema } from "@/schemas/login-schema";
+import { sendLoginAlert } from "@/lib/mail";
 
 export async function login(values: unknown) {
   const validatedFields = LoginSchema.safeParse(values);
@@ -17,12 +18,13 @@ export async function login(values: unknown) {
 
   const { email, password } = validatedFields.data;
 
-  // Get the user's role
+  // Get user information
   const user = await prisma.user.findUnique({
     where: {
       email,
     },
     select: {
+      firstName: true,
       role: true,
     },
   });
@@ -39,6 +41,20 @@ export async function login(values: unknown) {
       password,
       redirect: false,
     });
+
+    // Send login notification email
+    try {
+      await sendLoginAlert({
+        email,
+        firstName: user.firstName,
+        loginTime: new Date(),
+      });
+    } catch (error) {
+      console.error(
+        "Failed to send login notification:",
+        error
+      );
+    }
 
     return {
       success: true,

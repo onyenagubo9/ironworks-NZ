@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Control, UseFormSetValue, UseFormWatch, useWatch } from "react-hook-form";
+import {
+  UseFormSetValue,
+  UseFormWatch,
+} from "react-hook-form";
 
 import { ProductInput } from "@/schemas/product-schema";
 
@@ -16,40 +19,34 @@ export interface ProductImage {
   sortOrder: number;
 }
 
-export interface ProductImagesProps {
-  control?: Control<ProductInput>;
-  watch?: UseFormWatch<ProductInput>;
+interface ProductImagesProps {
+  watch: UseFormWatch<ProductInput>;
   setValue: UseFormSetValue<ProductInput>;
   initialImages?: ProductInput["images"];
 }
 
 export default function ProductImages({
-  control,
   watch,
   setValue,
   initialImages,
 }: ProductImagesProps) {
-  // Watch form images safely whether parent passes `watch` or `control`
-  const formImagesFromWatch = watch ? watch("images") : undefined;
-  const formImagesFromControl = useWatch({ control, name: "images" });
-  const formImages = formImagesFromWatch ?? formImagesFromControl;
+  const formImages = watch("images");
 
-  // Hydrate local state directly on initial render
   const [images, setImages] = useState<ProductImage[]>(() => {
-    const sourceImages = initialImages ?? formImages;
-    if (sourceImages && sourceImages.length > 0) {
-      return sourceImages.map((image, index) => ({
-        id: crypto.randomUUID(),
-        url: image.imageUrl,
-        publicId: image.publicId,
-        isCover: image.isCover ?? false,
-        sortOrder: image.sortOrder ?? index,
-      }));
-    }
-    return [];
+    const sourceImages =
+      initialImages && initialImages.length > 0
+        ? initialImages
+        : formImages ?? [];
+
+    return sourceImages.map((image, index) => ({
+      id: `${Date.now()}-${index}`,
+      url: image.imageUrl,
+      publicId: image.publicId,
+      isCover: image.isCover ?? index === 0,
+      sortOrder: image.sortOrder ?? index,
+    }));
   });
 
-  // Keep React Hook Form in sync when images state changes locally
   useEffect(() => {
     setValue(
       "images",
@@ -60,7 +57,10 @@ export default function ProductImages({
         isCover: image.isCover,
         sortOrder: image.sortOrder,
       })),
-      { shouldValidate: true }
+      {
+        shouldValidate: true,
+        shouldDirty: true,
+      }
     );
   }, [images, setValue]);
 
@@ -76,7 +76,10 @@ export default function ProductImages({
         </p>
       </div>
 
-      <UploadDropzone images={images} setImages={setImages} />
+      <UploadDropzone
+        images={images}
+        setImages={setImages}
+      />
 
       {images.length > 0 && (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
