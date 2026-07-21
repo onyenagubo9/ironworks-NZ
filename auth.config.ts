@@ -1,78 +1,10 @@
 import type { NextAuthConfig } from "next-auth";
-import Credentials from "next-auth/providers/credentials";
-import bcrypt from "bcryptjs";
 
-import { prisma } from "@/lib/prisma";
-import { LoginSchema } from "@/schemas/login-schema";
-
-const authConfig = {
-  providers: [
-    Credentials({
-      name: "Credentials",
-
-      credentials: {
-        email: {
-          label: "Email",
-          type: "email",
-        },
-        password: {
-          label: "Password",
-          type: "password",
-        },
-      },
-
-      async authorize(credentials) {
-        const validatedFields = LoginSchema.safeParse(credentials);
-
-        if (!validatedFields.success) {
-          return null;
-        }
-
-        const { email, password } = validatedFields.data;
-
-        const user = await prisma.user.findUnique({
-          where: {
-            email,
-          },
-        });
-
-        if (!user) {
-          return null;
-        }
-
-        // User registered with OAuth only
-        if (!user.password) {
-          return null;
-        }
-
-        // Block blocked users
-        if (user.status === "BLOCKED") {
-          return null;
-        }
-
-        const passwordMatch = await bcrypt.compare(
-          password,
-          user.password
-        );
-
-        if (!passwordMatch) {
-          return null;
-        }
-
-        return {
-          id: user.id,
-          email: user.email,
-          name: `${user.firstName} ${user.lastName}`,
-          role: user.role,
-        };
-      },
-    }),
-  ],
-
+export const authConfig = {
+  providers: [], // Empty array for now; full logic lives in auth.ts
   session: {
     strategy: "jwt",
   },
-
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
@@ -81,7 +13,6 @@ const authConfig = {
         token.name = user.name;
         token.email = user.email;
       }
-
       return token;
     },
 
@@ -92,16 +23,13 @@ const authConfig = {
         session.user.email = token.email ?? "";
         session.user.role = token.role as "ADMIN" | "CUSTOMER";
       }
-
       return session;
     },
   },
-
   pages: {
     signIn: "/login",
     error: "/login",
   },
-
   secret: process.env.AUTH_SECRET,
 } satisfies NextAuthConfig;
 
