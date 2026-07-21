@@ -154,7 +154,7 @@ export default function Navbar({
           {/* Account */}
 
           <Link
-            href="/account"
+            href="/dashboard"
             className="rounded-xl p-3 transition hover:bg-gray-100"
           >
             <User size={22} />
