@@ -1,6 +1,6 @@
 import { redirect } from "next/navigation";
-
 import Link from "next/link";
+import Image from "next/image";
 
 import {
   Package,
@@ -26,49 +26,47 @@ export default async function OrdersPage({
 
   const params = await searchParams;
 
-  const search =
-    params?.search?.trim() ?? "";
+  const search = params?.search?.trim() ?? "";
 
-  const orders =
-    await prisma.order.findMany({
-      where: {
-        customerId: session.user.id,
+  const orders = await prisma.order.findMany({
+    where: {
+      customerId: session.user.id,
 
-        ...(search
-          ? {
-              orderNumber: {
-                contains: search,
-                mode: "insensitive",
-              },
-            }
-          : {}),
-      },
+      ...(search
+        ? {
+            orderNumber: {
+              contains: search,
+              mode: "insensitive",
+            },
+          }
+        : {}),
+    },
 
-      include: {
-        payment: true,
+    include: {
+      payment: true,
 
-        items: {
-          take: 1,
+      items: {
+        take: 1,
 
-          include: {
-            product: {
-              include: {
-                images: {
-                  where: {
-                    isCover: true,
-                  },
-                  take: 1,
+        include: {
+          product: {
+            include: {
+              images: {
+                where: {
+                  isCover: true,
                 },
+                take: 1,
               },
             },
           },
         },
       },
+    },
 
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
+    orderBy: {
+      createdAt: "desc",
+    },
+  });
 
   return (
     <div className="mx-auto max-w-7xl px-6 py-10">
@@ -127,13 +125,10 @@ export default async function OrdersPage({
       {/* Orders */}
 
       <div className="mt-10 space-y-6">
-                {orders.map((order) => {
-          const firstItem =
-            order.items[0];
+        {orders.map((order) => {
+          const firstItem = order.items[0];
 
-          const image =
-            firstItem?.product.images[0]
-              ?.imageUrl;
+          const image = firstItem?.product.images[0]?.imageUrl;
 
           return (
             <div
@@ -150,11 +145,11 @@ export default async function OrdersPage({
 
                     {image ? (
 
-                      <img
+                      <Image
                         src={image}
-                        alt={
-                          firstItem.productName
-                        }
+                        alt={firstItem.productName}
+                        width={112}
+                        height={112}
                         className="h-full w-full object-cover"
                       />
 
@@ -186,14 +181,11 @@ export default async function OrdersPage({
 
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        order.status ===
-                        "DELIVERED"
+                        order.status === "DELIVERED"
                           ? "bg-green-100 text-green-700"
-                          : order.status ===
-                            "CANCELLED"
+                          : order.status === "CANCELLED"
                           ? "bg-red-100 text-red-700"
-                          : order.status ===
-                            "PROCESSING"
+                          : order.status === "PROCESSING"
                           ? "bg-blue-100 text-blue-700"
                           : "bg-yellow-100 text-yellow-700"
                       }`}
@@ -203,11 +195,9 @@ export default async function OrdersPage({
 
                     <span
                       className={`rounded-full px-3 py-1 text-xs font-semibold ${
-                        order.paymentStatus ===
-                        "PAID"
+                        order.paymentStatus === "PAID"
                           ? "bg-green-100 text-green-700"
-                          : order.paymentStatus ===
-                            "FAILED"
+                          : order.paymentStatus === "FAILED"
                           ? "bg-red-100 text-red-700"
                           : "bg-yellow-100 text-yellow-700"
                       }`}
@@ -260,8 +250,7 @@ export default async function OrdersPage({
                       </p>
 
                       <p className="mt-1 font-semibold">
-                        {order.payment
-                          ?.receiptUrl
+                        {order.payment?.receiptUrl
                           ? "Uploaded"
                           : "Pending"}
                       </p>
@@ -276,7 +265,7 @@ export default async function OrdersPage({
 
                 <div className="flex flex-col justify-center gap-3">
 
-                                      <Link
+                  <Link
                     href={`/orders/${order.id}`}
                     className="
                       rounded-xl
@@ -321,7 +310,7 @@ export default async function OrdersPage({
           );
         })}
 
-                {orders.length === 0 && (
+        {orders.length === 0 && (
           <div className="rounded-2xl border border-dashed border-gray-300 bg-white p-16 text-center">
 
             <Package
