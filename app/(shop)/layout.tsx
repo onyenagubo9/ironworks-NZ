@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 
 import StorefrontLayout from "@/components/frontend/layout/StorefrontLayout";
+import TawkChat from "@/components/TawkChat";
 
 export const metadata: Metadata = {
   title: {
@@ -27,8 +28,12 @@ export default function ShopLayout({
   children: React.ReactNode;
 }) {
   return (
-    <StorefrontLayout>
-      {children}
-    </StorefrontLayout>
+    <>
+      <StorefrontLayout>
+        {children}
+      </StorefrontLayout>
+
+      <TawkChat />
+    </>
   );
 }
