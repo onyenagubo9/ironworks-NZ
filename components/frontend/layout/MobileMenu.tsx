@@ -132,7 +132,7 @@ export default function MobileMenu({
           </p>
 
           <p className="mt-4 text-xs text-gray-400">
-            © {new Date().getFullYear()} GlobalTrust.
+            © {new Date().getFullYear()} ironworks.
             All rights reserved.
           </p>
 

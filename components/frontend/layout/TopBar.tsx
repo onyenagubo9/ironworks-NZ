@@ -21,7 +21,7 @@ export default function TopBar() {
 
             <Phone size={14} />
 
-            <span>+64 9 123 4567</span>
+            <span>+64 444881839</span>
 
           </div>
 
@@ -50,7 +50,7 @@ export default function TopBar() {
           <Truck size={15} />
 
           <span>
-            Nationwide Delivery Across New Zealand
+            World Delivery Across All Countries
           </span>
 
         </div>

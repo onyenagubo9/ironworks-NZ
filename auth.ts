@@ -14,35 +14,56 @@ export const {
   signOut,
 } = NextAuth({
   adapter: PrismaAdapter(prisma),
-  
+
   ...authConfig,
 
-  // Pass heavy providers here so they stay in Node.js execution
   providers: [
     Credentials({
       name: "Credentials",
+
       credentials: {
-        email: { label: "Email", type: "email" },
-        password: { label: "Password", type: "password" },
+        email: {
+          label: "Email",
+          type: "email",
+        },
+
+        password: {
+          label: "Password",
+          type: "password",
+        },
       },
+
       async authorize(credentials) {
-        const validatedFields = LoginSchema.safeParse(credentials);
+        const validatedFields =
+          LoginSchema.safeParse(credentials);
 
         if (!validatedFields.success) {
           return null;
         }
 
-        const { email, password } = validatedFields.data;
+        const { email, password } =
+          validatedFields.data;
 
-        const user = await prisma.user.findUnique({
-          where: { email },
-        });
+        const user =
+          await prisma.user.findUnique({
+            where: {
+              email,
+            },
+          });
 
-        if (!user || !user.password || user.status === "BLOCKED") {
+        if (
+          !user ||
+          !user.password ||
+          user.status === "BLOCKED"
+        ) {
           return null;
         }
 
-        const passwordMatch = await bcrypt.compare(password, user.password);
+        const passwordMatch =
+          await bcrypt.compare(
+            password,
+            user.password
+          );
 
         if (!passwordMatch) {
           return null;
@@ -50,9 +71,23 @@ export const {
 
         return {
           id: user.id,
+
           email: user.email,
+
           name: `${user.firstName} ${user.lastName}`,
+
+          firstName: user.firstName,
+
+          lastName: user.lastName,
+
           role: user.role,
+        } as {
+          id: string;
+          email: string;
+          name: string;
+          firstName: string;
+          lastName: string;
+          role: "ADMIN" | "CUSTOMER";
         };
       },
     }),
@@ -61,8 +96,12 @@ export const {
   events: {
     async linkAccount({ user }) {
       await prisma.user.update({
-        where: { id: user.id },
-        data: { emailVerified: new Date() },
+        where: {
+          id: user.id,
+        },
+        data: {
+          emailVerified: new Date(),
+        },
       });
     },
   },

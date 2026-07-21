@@ -80,7 +80,7 @@ export default function Footer() {
                 className="text-[#DC2626]"
               />
 
-              <span>+64 9 000 0000</span>
+              <span>+64 44881839</span>
 
             </div>
 
