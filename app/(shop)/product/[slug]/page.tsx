@@ -52,11 +52,35 @@ export default async function ProductPage({
     },
     include: {
       brand: true,
+
       category: true,
+
       inventory: true,
+
       images: {
         orderBy: {
           sortOrder: "asc",
+        },
+      },
+
+      reviews: {
+        where: {
+          approved: true,
+        },
+
+        include: {
+          user: {
+            select: {
+              id: true,
+              firstName: true,
+              lastName: true,
+              avatar: true,
+            },
+          },
+        },
+
+        orderBy: {
+          createdAt: "desc",
         },
       },
     },
@@ -66,7 +90,6 @@ export default async function ProductPage({
     notFound();
   }
 
-  // Convert Prisma Decimal values into plain numbers
   const serializedProduct = {
     ...product,
 
@@ -95,11 +118,14 @@ export default async function ProductPage({
     height: product.height
       ? Number(product.height)
       : null,
+
+    reviews: product.reviews.map((review) => ({
+      ...review,
+    })),
   };
 
   return (
     <div className="bg-gray-50">
-
       <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
 
         {/* Breadcrumb */}
@@ -146,7 +172,6 @@ export default async function ProductPage({
         </div>
 
       </div>
-
     </div>
   );
 }

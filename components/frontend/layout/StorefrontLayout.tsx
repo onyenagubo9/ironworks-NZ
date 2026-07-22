@@ -11,6 +11,8 @@ import { CartProvider } from "@/context/CartProvider";
 
 import PageLoader from "@/components/ui/PageLoader";
 
+import { WishlistProvider } from "@/context/WishlistProvider";
+
 interface StorefrontLayoutProps {
   children: React.ReactNode;
 }
@@ -38,6 +40,8 @@ export default function StorefrontLayout({
 
   return (
     <CartProvider>
+
+      <WishlistProvider>
 
       <div className="flex min-h-screen flex-col bg-gray-50">
 
@@ -73,7 +77,7 @@ export default function StorefrontLayout({
         <Footer />
 
       </div>
-
+        </WishlistProvider>
     </CartProvider>
   );
 }

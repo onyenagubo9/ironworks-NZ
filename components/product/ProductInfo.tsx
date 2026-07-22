@@ -16,15 +16,29 @@ import {
   XCircle,
 } from "lucide-react";
 
-import { Prisma } from "@prisma/client";
-
 import {
   Brand,
   Category,
   Inventory,
   Product,
   ProductImage,
+  Review,
+  User,
 } from "@prisma/client";
+
+import ProductReviews from "./ProductReviews";
+import ReviewForm from "./ReviewForm";
+
+import { useCart } from "@/context/CartProvider";
+
+import { useWishlist } from "@/context/WishlistProvider";
+
+type ProductReview = Review & {
+  user: Pick<
+    User,
+    "id" | "firstName" | "lastName" | "avatar"
+  >;
+};
 
 type ProductProps = Omit<
   Product,
@@ -45,9 +59,14 @@ type ProductProps = Omit<
   height: number | null;
 
   brand: Brand | null;
+
   category: Category;
+
   inventory: Inventory | null;
+
   images: ProductImage[];
+
+  reviews: ProductReview[];
 };
 
 interface ProductInfoProps {
@@ -57,19 +76,33 @@ interface ProductInfoProps {
 export default function ProductInfo({
   product,
 }: ProductInfoProps) {
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] =
+    useState(1);
 
-  const price = Number(product.price);
+  const price = product.price;
 
-  const comparePrice = product.comparePrice
-    ? Number(product.comparePrice)
-    : null;
+  const comparePrice =
+    product.comparePrice;
 
-  const stock = product.inventory?.quantity ?? 0;
+  const stock =
+    product.inventory?.quantity ?? 0;
 
   const inStock =
     stock > 0 ||
-    product.inventory?.allowBackorder === true;
+    product.inventory?.allowBackorder ===
+      true;
+
+  const totalReviews =
+    product.reviews.length;
+
+  const averageRating =
+    totalReviews === 0
+      ? 0
+      : product.reviews.reduce(
+          (sum, review) =>
+            sum + review.rating,
+          0
+        ) / totalReviews;
 
   const discount = useMemo(() => {
     if (
@@ -80,7 +113,8 @@ export default function ProductInfo({
     }
 
     return Math.round(
-      ((comparePrice - price) / comparePrice) *
+      ((comparePrice - price) /
+        comparePrice) *
         100
     );
   }, [price, comparePrice]);
@@ -102,6 +136,14 @@ export default function ProductInfo({
     );
   };
 
+  const { addToCart } = useCart();
+
+  const {
+  addToWishlist,
+  removeFromWishlist,
+  isInWishlist,
+} = useWishlist();
+
   return (
     <div className="space-y-8">
 
@@ -120,28 +162,51 @@ export default function ProductInfo({
         </span>
       )}
 
-      {/* Product Name */}
+      {/* Product Header */}
 
       <div>
 
         <h1 className="text-4xl font-bold leading-tight text-[#0F172A]">
+
           {product.name}
+
         </h1>
 
-        <div className="mt-4 flex flex-wrap items-center gap-6">
+        <div className="mt-5 flex flex-wrap items-center gap-6">
 
           <div className="flex items-center gap-1">
 
-            {Array.from({ length: 5 }).map((_, index) => (
+            {Array.from({
+              length: 5,
+            }).map((_, index) => (
+
               <Star
                 key={index}
                 size={18}
-                className="fill-yellow-400 text-yellow-400"
+                className={
+                  index <
+                  Math.round(
+                    averageRating
+                  )
+                    ? "fill-yellow-400 text-yellow-400"
+                    : "text-gray-300"
+                }
               />
+
             ))}
 
             <span className="ml-2 text-sm text-gray-500">
-              No reviews yet
+
+              {totalReviews > 0
+                ? `${averageRating.toFixed(
+                    1
+                  )} (${totalReviews} review${
+                    totalReviews > 1
+                      ? "s"
+                      : ""
+                  })`
+                : "No reviews yet"}
+
             </span>
 
           </div>
@@ -151,7 +216,9 @@ export default function ProductInfo({
             SKU
 
             <span className="ml-2 font-semibold text-[#0F172A]">
+
               {product.sku}
+
             </span>
 
           </div>
@@ -160,7 +227,7 @@ export default function ProductInfo({
 
       </div>
 
-      {/* Price */}
+            {/* Price */}
 
       <section className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
 
@@ -196,7 +263,7 @@ export default function ProductInfo({
 
       </section>
 
-            {/* Product Details */}
+      {/* Product Details */}
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
 
@@ -205,7 +272,9 @@ export default function ProductInfo({
           <div className="flex items-center justify-between">
 
             <span className="font-medium text-gray-600">
+
               Availability
+
             </span>
 
             {inStock ? (
@@ -215,7 +284,9 @@ export default function ProductInfo({
                 <CheckCircle size={18} />
 
                 <span className="font-semibold">
+
                   In Stock ({stock})
+
                 </span>
 
               </div>
@@ -227,7 +298,9 @@ export default function ProductInfo({
                 <XCircle size={18} />
 
                 <span className="font-semibold">
+
                   Out of Stock
+
                 </span>
 
               </div>
@@ -239,14 +312,18 @@ export default function ProductInfo({
           <div className="flex items-center justify-between">
 
             <span className="font-medium text-gray-600">
+
               Category
+
             </span>
 
             <Link
               href={`/category/${product.category.slug}`}
-              className="font-semibold text-[#0F172A] hover:text-[#DC2626]"
+              className="font-semibold text-[#0F172A] transition hover:text-[#DC2626]"
             >
+
               {product.category.name}
+
             </Link>
 
           </div>
@@ -254,22 +331,28 @@ export default function ProductInfo({
           <div className="flex items-center justify-between">
 
             <span className="font-medium text-gray-600">
+
               Brand
+
             </span>
 
             {product.brand ? (
 
               <Link
                 href={`/brands/${product.brand.slug}`}
-                className="font-semibold text-[#0F172A] hover:text-[#DC2626]"
+                className="font-semibold text-[#0F172A] transition hover:text-[#DC2626]"
               >
+
                 {product.brand.name}
+
               </Link>
 
             ) : (
 
               <span className="text-gray-500">
+
                 No Brand
+
               </span>
 
             )}
@@ -348,24 +431,41 @@ export default function ProductInfo({
 
       <section className="space-y-4">
 
-        <button
-          disabled={!inStock}
-          className="
-            h-14
-            w-full
-            rounded-xl
-            bg-[#DC2626]
-            text-lg
-            font-semibold
-            text-white
-            transition
-            hover:bg-red-700
-            disabled:cursor-not-allowed
-            disabled:bg-gray-400
-          "
-        >
-          Add To Cart
-        </button>
+          <button
+  type="button"
+  disabled={!inStock}
+  onClick={async () => {
+    const result = await addToCart(
+      product.id,
+      quantity
+    );
+
+    if (!result.success) {
+      alert(
+        result.error ??
+          "Unable to add product to cart."
+      );
+      return;
+    }
+
+    alert("Product added to cart!");
+  }}
+  className="
+    h-14
+    w-full
+    rounded-xl
+    bg-[#DC2626]
+    text-lg
+    font-semibold
+    text-white
+    transition
+    hover:bg-red-700
+    disabled:cursor-not-allowed
+    disabled:bg-gray-400
+  "
+>
+  Add To Cart
+</button>
 
         <button
           disabled={!inStock}
@@ -386,41 +486,70 @@ export default function ProductInfo({
             disabled:text-gray-400
           "
         >
+
           Buy Now
+
         </button>
 
-              </section>
+      </section>
 
       {/* Wishlist */}
 
-      <button
-        type="button"
-        className="
-          flex
-          h-14
-          w-full
-          items-center
-          justify-center
-          gap-3
-          rounded-xl
-          border
-          border-gray-300
-          bg-white
-          font-semibold
-          text-[#0F172A]
-          transition
-          hover:border-[#DC2626]
-          hover:text-[#DC2626]
-        "
-      >
+    <button
+  type="button"
+  onClick={async () => {
+    if (isInWishlist(product.id)) {
+      const result =
+        await removeFromWishlist(
+          product.id
+        );
 
-        <Heart size={20} />
+      if (!result.success) {
+        alert(result.error);
+      }
 
-        Add to Wishlist
+      return;
+    }
 
-      </button>
+    const result =
+      await addToWishlist(product.id);
 
-      {/* Shopping Benefits */}
+    if (!result.success) {
+      alert(result.error);
+    }
+  }}
+  className={`
+    flex
+    h-14
+    w-full
+    items-center
+    justify-center
+    gap-3
+    rounded-xl
+    border
+    font-semibold
+    transition
+    ${
+      isInWishlist(product.id)
+        ? "border-red-600 bg-red-50 text-red-600"
+        : "border-gray-300 bg-white text-[#0F172A] hover:border-[#DC2626] hover:text-[#DC2626]"
+    }
+  `}
+>
+  <Heart
+    size={20}
+    className={
+      isInWishlist(product.id)
+        ? "fill-current"
+        : ""
+    }
+  />
+
+  {isInWishlist(product.id)
+    ? "Remove from Wishlist"
+    : "Add to Wishlist"}
+</button>
+            {/* Shopping Benefits */}
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
 
@@ -440,12 +569,16 @@ export default function ProductInfo({
             <div>
 
               <h3 className="font-semibold text-[#0F172A]">
+
                 Free Shipping
+
               </h3>
 
               <p className="mt-1 text-sm text-gray-500">
+
                 Enjoy free shipping on orders over
                 $100 with fast nationwide delivery.
+
               </p>
 
             </div>
@@ -466,12 +599,16 @@ export default function ProductInfo({
             <div>
 
               <h3 className="font-semibold text-[#0F172A]">
+
                 30-Day Returns
+
               </h3>
 
               <p className="mt-1 text-sm text-gray-500">
+
                 Return eligible products within
-                30 days for a full refund or exchange.
+                30 days for a refund or exchange.
+
               </p>
 
             </div>
@@ -492,12 +629,16 @@ export default function ProductInfo({
             <div>
 
               <h3 className="font-semibold text-[#0F172A]">
+
                 Secure Checkout
+
               </h3>
 
               <p className="mt-1 text-sm text-gray-500">
-                All payments are protected using
-                SSL encryption for maximum security.
+
+                Every payment is protected using
+                modern SSL encryption technology.
+
               </p>
 
             </div>
@@ -534,7 +675,7 @@ export default function ProductInfo({
 
       <section className="rounded-2xl border border-gray-200 bg-white p-6">
 
-        <h2 className="mb-6 text-xl font-bold text-[#0F172A]">
+        <h2 className="mb-6 text-2xl font-bold text-[#0F172A]">
 
           Why You'll Love It
 
@@ -545,13 +686,17 @@ export default function ProductInfo({
           <div className="rounded-xl bg-gray-50 p-5">
 
             <h3 className="font-semibold text-[#0F172A]">
+
               Premium Quality
+
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-gray-500">
-              Carefully crafted using high-quality
-              materials to ensure durability and
-              long-lasting performance.
+
+              Manufactured using premium-quality
+              materials for long-lasting durability
+              and reliable performance.
+
             </p>
 
           </div>
@@ -559,14 +704,16 @@ export default function ProductInfo({
           <div className="rounded-xl bg-gray-50 p-5">
 
             <h3 className="font-semibold text-[#0F172A]">
+
               Trusted Brand
+
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-gray-500">
 
               {product.brand
                 ? `${product.brand.name} is trusted by thousands of customers worldwide.`
-                : "Manufactured to meet high-quality standards."}
+                : "Manufactured to meet strict quality standards."}
 
             </p>
 
@@ -575,12 +722,17 @@ export default function ProductInfo({
           <div className="rounded-xl bg-gray-50 p-5">
 
             <h3 className="font-semibold text-[#0F172A]">
+
               Fast Delivery
+
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-gray-500">
+
               Orders are processed quickly and
-              shipped using reliable courier services.
+              delivered using reliable courier
+              partners across the country.
+
             </p>
 
           </div>
@@ -588,12 +740,17 @@ export default function ProductInfo({
           <div className="rounded-xl bg-gray-50 p-5">
 
             <h3 className="font-semibold text-[#0F172A]">
+
               Customer Support
+
             </h3>
 
             <p className="mt-2 text-sm leading-6 text-gray-500">
-              Our customer support team is available
-              to assist you before and after your purchase.
+
+              Our support team is available before
+              and after your purchase to assist
+              with any questions.
+
             </p>
 
           </div>
@@ -601,67 +758,27 @@ export default function ProductInfo({
         </div>
 
       </section>
+
             {/* Customer Reviews */}
 
-      <section className="rounded-2xl border border-gray-200 bg-white p-6">
+      <ProductReviews
+        reviews={product.reviews}
+      />
 
-        <div className="flex items-center justify-between">
+      {/* Review Form */}
 
-          <div>
-
-            <h2 className="text-2xl font-bold text-[#0F172A]">
-              Customer Reviews
-            </h2>
-
-            <p className="mt-2 text-gray-500">
-              There are no reviews for this product yet.
-            </p>
-
-          </div>
-
-          <button
-            type="button"
-            className="
-              rounded-xl
-              bg-[#DC2626]
-              px-6
-              py-3
-              font-semibold
-              text-white
-              transition
-              hover:bg-red-700
-            "
-          >
-            Write a Review
-          </button>
-
-        </div>
-
-        <div className="mt-8 rounded-xl border border-dashed border-gray-300 py-12 text-center">
-
-          <Star
-            size={48}
-            className="mx-auto text-gray-300"
-          />
-
-          <h3 className="mt-5 text-xl font-semibold text-[#0F172A]">
-            Be the first to review this product
-          </h3>
-
-          <p className="mt-3 text-gray-500">
-            Share your experience and help other customers.
-          </p>
-
-        </div>
-
-      </section>
+      <ReviewForm
+        productId={product.id}
+      />
 
       {/* Product Summary */}
 
       <section className="rounded-2xl border border-gray-200 bg-gray-50 p-6">
 
-        <h2 className="mb-6 text-xl font-bold text-[#0F172A]">
+        <h2 className="mb-6 text-2xl font-bold text-[#0F172A]">
+
           Product Summary
+
         </h2>
 
         <div className="space-y-4">
@@ -669,11 +786,15 @@ export default function ProductInfo({
           <div className="flex justify-between">
 
             <span className="text-gray-500">
+
               Product
+
             </span>
 
             <span className="font-semibold text-[#0F172A]">
+
               {product.name}
+
             </span>
 
           </div>
@@ -681,11 +802,15 @@ export default function ProductInfo({
           <div className="flex justify-between">
 
             <span className="text-gray-500">
+
               SKU
+
             </span>
 
             <span className="font-semibold text-[#0F172A]">
+
               {product.sku}
+
             </span>
 
           </div>
@@ -693,11 +818,15 @@ export default function ProductInfo({
           <div className="flex justify-between">
 
             <span className="text-gray-500">
+
               Category
+
             </span>
 
             <span className="font-semibold text-[#0F172A]">
+
               {product.category.name}
+
             </span>
 
           </div>
@@ -705,11 +834,15 @@ export default function ProductInfo({
           <div className="flex justify-between">
 
             <span className="text-gray-500">
+
               Brand
+
             </span>
 
             <span className="font-semibold text-[#0F172A]">
+
               {product.brand?.name ?? "No Brand"}
+
             </span>
 
           </div>
@@ -717,11 +850,15 @@ export default function ProductInfo({
           <div className="flex justify-between">
 
             <span className="text-gray-500">
+
               Price
+
             </span>
 
             <span className="font-bold text-[#DC2626]">
+
               ${price.toFixed(2)}
+
             </span>
 
           </div>
@@ -731,11 +868,15 @@ export default function ProductInfo({
             <div className="flex justify-between">
 
               <span className="text-gray-500">
+
                 Original Price
+
               </span>
 
               <span className="text-gray-400 line-through">
+
                 ${comparePrice.toFixed(2)}
+
               </span>
 
             </div>
@@ -745,7 +886,9 @@ export default function ProductInfo({
           <div className="flex justify-between">
 
             <span className="text-gray-500">
+
               Availability
+
             </span>
 
             <span
@@ -755,9 +898,48 @@ export default function ProductInfo({
                   : "text-red-600"
               }`}
             >
+
               {inStock
                 ? "In Stock"
                 : "Out of Stock"}
+
+            </span>
+
+          </div>
+
+          <div className="flex justify-between">
+
+            <span className="text-gray-500">
+
+              Reviews
+
+            </span>
+
+            <span className="font-semibold text-[#0F172A]">
+
+              {totalReviews}
+
+            </span>
+
+          </div>
+
+          <div className="flex justify-between">
+
+            <span className="text-gray-500">
+
+              Average Rating
+
+            </span>
+
+            <span className="flex items-center gap-2 font-semibold text-[#0F172A]">
+
+              <Star
+                size={18}
+                className="fill-yellow-400 text-yellow-400"
+              />
+
+              {averageRating.toFixed(1)}
+
             </span>
 
           </div>
@@ -769,5 +951,4 @@ export default function ProductInfo({
     </div>
 
   );
-
 }

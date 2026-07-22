@@ -59,8 +59,8 @@ const menus = [
     icon: Users,
   },
   {
-    title: "Reviews",
-    href: "/admin/reviews",
+    title: "Carts",
+    href: "/admin/carts",
     icon: Star,
   },
   {
@@ -68,16 +68,7 @@ const menus = [
     href: "/admin/coupons",
     icon: TicketPercent,
   },
-  {
-    title: "Banners",
-    href: "/admin/banners",
-    icon: Image,
-  },
-  {
-    title: "Analytics",
-    href: "/admin/analytics",
-    icon: BarChart3,
-  },
+  
   {
     title: "Settings",
     href: "/admin/settings",

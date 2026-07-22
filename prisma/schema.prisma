@@ -216,16 +216,29 @@ model Inventory {
   product          Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
 }
 
+
 model Review {
   id        String   @id @default(cuid())
+
   rating    Int
+  title     String?
   comment   String?
+
+  verifiedPurchase Boolean @default(false)
+
+  approved Boolean @default(true)
+
+  helpful  Int @default(0)
+
   userId    String
   productId String
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([productId])
