@@ -13,15 +13,21 @@ const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
 });
-
 export const metadata: Metadata = {
   title: {
-    default: "E-Commerce",
-    template: "%s | E-Commerce",
+    default: "Ironworks NZ",
+    template: "%s | Ironworks NZ",
   },
-  description: "Modern E-Commerce Platform",
-};
 
+  description:
+    "Ironworks NZ is your trusted supplier of premium steel, industrial hardware, fabrication equipment, and construction materials across New Zealand.",
+
+  icons: {
+    icon: "/ironwork.png",
+    shortcut: "/logo.png",
+    apple: "/logo.png",
+  },
+};
 export default function RootLayout({
   children,
 }: Readonly<{

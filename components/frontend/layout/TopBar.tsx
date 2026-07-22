@@ -29,7 +29,7 @@ export default function TopBar() {
 
             <Mail size={14} />
 
-            <span>sales@ironworksnz.co.nz</span>
+            <span>admin@ironworks-nz.site</span>
 
           </div>
 
